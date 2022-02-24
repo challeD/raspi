@@ -14,20 +14,26 @@ def read_txt(fileName):
         f.close()
         return text
 
-def check_ip(text):
+def check_ip(text_list):
 
     for i in range(len(text_list)):
         text = text_list[i]
         match = re.search(r'([0-9]+\.){3}[0-9]+',text)
         print(match)
 
-def time(text):
+def time(text_list):
 
     for i in range(len(text_list)):
         text = text_list[i]
         match = re.search(r'[A-z]+ [0-9]+ ([0-9]+\:){2}[0-9]+',text)
         print(match)
 
+def sshd(text_list):
+
+    for i in range(len(text_list)):
+        text = text_list[i]
+        match = re.search(r'[A-z]+\[[0-9]+\]',text)
+        print(match)        
 
 def regular(text):
 
@@ -114,7 +120,7 @@ if __name__ == "__main__":
     len_text_list = len(text_list)
 
     #check_ip(text_list)
-    time(text_list)
+    sshd(text_list)
     '''
     for i in range(len(text_list)):
         text = text_list[i]
