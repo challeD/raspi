@@ -38,8 +38,8 @@ def regular(text):
     verDif_pattern = "Did not receive identification string" #sshdのバージョンの違い
     invUsr_pattern = "Invalid user" #ユーザー名が違う
     acpKey_pattern = "Accepted publickey" #公開鍵によってログインできたユーザー
-    pamUnix_patten = "pam_unix" #定期実行のプログラム？
-    connectionClosed_pattern = "Connection closed"
+    pamUnix_patten = "pam_unix" #定期実行のプログラム
+    connectionClosed_pattern = "Connection closed" #
     badprotocolVer_pattern = "Bad protocol version"
     dising_pattern = "Disconnecting"
     protmjVer_pattern  = "Protocol major versions"
