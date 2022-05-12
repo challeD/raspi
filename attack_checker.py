@@ -1,12 +1,27 @@
 
 #攻撃元のIPアドレスを検出し、その国籍を調べ出力する。
+#sshdだけ取り出す。
 
+#問題点:取り出した一つのsshdIDが合ってるか不明。
+#       sshdが重なっていてNoneと返した場合があるのか不明or次の(同じ)sshdIDから取ってくるようにしたい。 
+#       auth.log消してしまった・・・。
 
-from distutils.log import error
-from nis import match
 import re
+import csv
+import collections
 
-from numpy import mat
+def make_csv(filename):
+    header = ['IP','num']
+    with open(filename, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        f.close()
+
+def add_csv(filename,ip,num):
+    body = [ip,num]
+    with open(filename, 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow(body)
 
 def read_txt(fileName):
     with open(fileName, 'r') as f:
@@ -14,29 +29,37 @@ def read_txt(fileName):
         f.close()
         return text
 
-def check_ip(text_list):
+def check_ip(text):
 
-    for i in range(len(text_list)):
-        text = text_list[i]
-        match = re.search(r'([0-9]+\.){3}[0-9]+',text)
-        print(match)
+    match = re.search(r'([0-9]+\.){3}[0-9]+',text)
+    
+    if match:
+        return match.group()
 
-def time(text_list):
+def check_time(text):
 
-    for i in range(len(text_list)):
-        text = text_list[i]
-        match = re.search(r'[A-z]+ [0-9]+ ([0-9]+\:){2}[0-9]+',text)
-        print(match)
+    match = re.search(r'[A-z]+ [0-9]+ ([0-9]+\:){2}[0-9]+',text)
 
-def sshd(text_list):
+    if match:
+        return match.group()
 
-    for i in range(len(text_list)):
-        text = text_list[i]
-        match = re.search(r'[A-z]+\[[0-9]+\]',text)
-        print(match)        
+def check_sshdId(text):
+
+    match = re.search(r'sshd\[[0-9]+\]',text)
+
+    if match:
+        return match.group()
+
+def check_login(text):
+
+    match = re.search(r'systemd-logind\[[0-9]+\]',text)
+    
+    if match:
+        return match.group()
 
 def regular(text):
 
+    #状態を追記しないと判定しないところがダメ。
     #状態の種類:
 
     recDis_pattern = "Received disconnect" #受信を切断 dis_patternとセット recDis_pattern→dis_patternを返す。
@@ -45,7 +68,7 @@ def regular(text):
     invUsr_pattern = "Invalid user" #ユーザー名が違う
     acpKey_pattern = "Accepted publickey" #公開鍵によってログインできたユーザー
     pamUnix_patten = "pam_unix" #定期実行のプログラム
-    connectionClosed_pattern = "Connection closed" #
+    connectionClosed_pattern = "Connection closed"
     badprotocolVer_pattern = "Bad protocol version"
     dising_pattern = "Disconnecting"
     protmjVer_pattern  = "Protocol major versions"
@@ -111,21 +134,65 @@ def regular(text):
     if connectionReset_result:
         return connectionReset_result
 
-
 if __name__ == "__main__":
     
-    file_name = "auth.log"
+    log_file = "auth.log"
+    file_name = "IP.csv"
+    sshdlog = ""
 
-    text_list = read_txt(file_name)
+    ip_list = []
+    text_list = read_txt(log_file)
     len_text_list = len(text_list)
 
-    #check_ip(text_list)
-    sshd(text_list)
-    '''
-    for i in range(len(text_list)):
+    for i in range(len_text_list):
+        
         text = text_list[i]
-        judege = regular(text)
-        if judege == None:
-            break
-        print(i+1,judege)
-    '''
+
+        sshd = check_sshdId(text)
+
+        #割り込み処理の対応sshd[1]→[2]→[1]の改善。
+        #重なりのないsshdの検知。
+        #現時点では何もしないif-passを入れている。(何かに使えるかも？)
+
+        if sshd == None:
+            
+            #sshd以外,cronなどを検知したい時に使う。
+            
+            pass
+
+        elif sshd != sshdlog:
+
+            #ここで検知。
+            #現時点ではipのNoneがあるが、実はIP検知可能かもしれない。
+
+            #print(text)
+
+            sshdlog = sshd
+
+            ip = check_ip(text)
+
+            if ip == None:
+                pass
+
+            else:
+                
+                ip_list.append(ip)
+
+                pass
+        
+        else:
+
+            #重なったものはpass
+
+            pass
+        
+
+    c = collections.Counter(ip_list)
+    c = c.most_common()
+
+    make_csv(file_name)
+    
+    for j in range(len(c)):
+        add_csv(file_name,c[j][0],c[j][1])
+
+
